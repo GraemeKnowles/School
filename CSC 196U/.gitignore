@@ -323,4 +323,5 @@ ASALocalRun/
 *.binlog
 
 # CSC 196U Specific Ignores
-output.raw
+result.txt
+myoutput.raw
