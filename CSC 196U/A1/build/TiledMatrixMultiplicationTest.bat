@@ -1,0 +1,1 @@
+for /l %%x in (0, 1, 4) do .\Debug\TiledMatrixMultiplication_Template -e .\TiledMatrixMultiplication\Dataset\%%x\output.raw -i .\TiledMatrixMultiplication\Dataset\%%x\input0.raw,.\TiledMatrixMultiplication\Dataset\%%x\input1.raw -o .\TiledMatrixMultiplication\Dataset\%%x\myoutput.raw -t matrix > .\TiledMatrixMultiplication\Dataset\%%x\result.txt

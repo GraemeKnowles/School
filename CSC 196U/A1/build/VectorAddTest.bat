@@ -1,0 +1,1 @@
+for /l %%x in (0, 1, 4) do .\Debug\VectorAdd_Template -e .\VectorAdd\Dataset\%%x\output.raw -i .\VectorAdd\Dataset\%%x\input0.raw,.\VectorAdd\Dataset\%%x\input1.raw -o .\VectorAdd\Dataset\4\myoutput.raw -t vector > .\VectorAdd\Dataset\%%x\result.txt

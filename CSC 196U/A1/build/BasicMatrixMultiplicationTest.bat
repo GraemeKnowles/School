@@ -1,0 +1,1 @@
+for /l %%x in (0, 1, 4) do .\Debug\BasicMatrixMultiplication_Template -e .\BasicMatrixMultiplication\Dataset\%%x\output.raw -i .\BasicMatrixMultiplication\Dataset\%%x\input0.raw,.\BasicMatrixMultiplication\Dataset\%%x\input1.raw -o .\BasicMatrixMultiplication\Dataset\%%x\myoutput.raw -t matrix > .\BasicMatrixMultiplication\Dataset\%%x\result.txt 
