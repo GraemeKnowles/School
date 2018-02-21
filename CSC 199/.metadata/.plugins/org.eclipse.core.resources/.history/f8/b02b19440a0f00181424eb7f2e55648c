@@ -1,0 +1,7 @@
+package recursiveDescent;
+
+abstract class Token{
+	public abstract String toInfix();
+	
+	public abstract boolean isFirstCharValid();
+}

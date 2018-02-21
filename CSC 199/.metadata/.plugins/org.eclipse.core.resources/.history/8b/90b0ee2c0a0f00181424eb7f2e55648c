@@ -1,0 +1,5 @@
+package recursiveDescent;
+
+interface Infixable {
+	public String toInfix();
+}

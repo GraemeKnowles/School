@@ -1,0 +1,49 @@
+package recursiveDescent;
+
+// This parser parses input based on the following Infix Grammar. 
+// expression ::= "(", (function | operator) ,")"
+// function ::= validName, {" ", term}
+// validName ::= validChar, {" ", validChar}
+// validChar ::= a-z | A-Z | 0-9 | _ | . | /
+// term ::= param | expression
+// operator ::= operatorName, " ", term, " ", term
+// operatorName ::= + | - | / | * 
+// param ::= validName
+
+// All rules have their own class with a static function called parse(...) that parses each 
+// rule into its own token that contains references to each sub-token that it is comprised of. 
+
+// Because the output syntax for fungp uses parenthesis, order of operations
+// need not be accounted for. Each token then has an override of the function 
+// toInfix() that returns the infix version of that token.
+
+public class Parser {
+
+	Token parsed = null;
+
+	public boolean parse(String input) {
+		return parse(input, true);
+	}
+	
+	// Parses input prefix string.
+	public boolean parse(String input, boolean verboseErrors) {
+		try {
+			parsed = Expression.parse(new InputScanner(input));
+		} catch (IllegalArgumentException iae) {
+			if(verboseErrors) {
+				System.out.println(iae.getMessage());
+			}
+			return false;
+		}
+		return true;
+	}
+
+	// Outputs previously parsed input string in infix notation
+	public String toInfix() {
+		if (parsed == null) {
+			return "";
+		}
+		return parsed.toInfix();
+	}
+
+}

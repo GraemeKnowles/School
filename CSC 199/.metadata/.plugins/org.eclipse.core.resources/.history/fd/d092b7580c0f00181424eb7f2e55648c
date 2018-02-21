@@ -1,0 +1,32 @@
+package recursiveDescent;
+
+//term ::= param | expression
+class Term extends Token {
+
+	public static Term parse(InputScanner input) {
+		
+		char nextChar = input.peekNext();
+		
+		Term t = new Term();
+		if(nextChar == '(') {
+			t.paramOrExpression = Expression.parse(input);
+		}else if(ValidName.validChar(nextChar)) {
+			t.paramOrExpression = Param.parse(input);
+		}
+		
+		return t;
+	}
+	
+	private Token paramOrExpression;
+	
+	protected Term() {}
+		
+	@Override
+	public String toInfix() {
+		return paramOrExpression.toInfix();
+	}
+
+	public static boolean isFirstCharValid(char c) {
+		return Expression.isFirstCharValid(c) || ValidName.isFirstCharValid(c);
+	}
+}

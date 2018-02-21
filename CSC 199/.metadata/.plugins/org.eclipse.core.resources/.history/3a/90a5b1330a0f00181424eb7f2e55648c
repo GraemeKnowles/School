@@ -1,0 +1,5 @@
+package recursiveDescent;
+
+abstract class Token{
+	public String toInfix();
+}

@@ -1,0 +1,41 @@
+package recursiveDescent;
+
+//expression ::= (function | operator)
+class Expression extends Token {
+
+	public static Expression parse(InputScanner input) {
+		Expression e = new Expression();
+		if (input.moveNext() == '(') {
+			char peekNext = input.peekNext();
+			if (OperatorName.isFirstCharValid(peekNext)) {
+				e.function = Operator.parse(input);
+			} else if (Function.isFirstCharValid(peekNext)) {
+				e.function = Function.parse(input);
+			} else {
+				throw new IllegalArgumentException("Expression with no argument at index " + input.getIndex());
+			}
+
+			if (input.moveNext() == ')') {
+				return e;
+			} else {
+				throw new IllegalArgumentException("Missing ) at index " + input.getIndex());
+			}
+		} else {
+			throw new IllegalArgumentException("Missing ( at index " + input.getIndex());
+		}
+	}
+
+	Function function;
+
+	protected Expression() {
+	}
+
+	@Override
+	public String toInfix() {
+		return "(" + function.toInfix() + ")";
+	}
+
+	public static boolean isFirstCharValid(char c) {
+		return c == '(';
+	}
+}

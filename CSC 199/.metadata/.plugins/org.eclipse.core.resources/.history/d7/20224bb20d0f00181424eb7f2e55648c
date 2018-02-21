@@ -1,0 +1,29 @@
+package recursiveDescent;
+
+//param ::= validName
+class Param extends Token {
+
+	public static Param parse(InputScanner input) {
+		Param p = new Param();
+		p.name = ValidName.parse(input);
+		
+		if(p.name.toString().compareTo("") == 0) {
+			throw new IllegalArgumentException("Invalid Term at character index " + input.getIndex());
+		}
+		
+		return p;
+	}
+	
+	private ValidName name;
+	
+	protected Param() {}
+	
+	@Override
+	public String toInfix() {
+		return name.toString();
+	}
+
+	public static boolean isFirstCharValid(char c) {
+		return ValidName.isFirstCharValid(c);
+	}
+}

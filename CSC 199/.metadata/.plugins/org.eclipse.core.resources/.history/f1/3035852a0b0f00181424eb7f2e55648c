@@ -1,0 +1,41 @@
+package recursiveDescent;
+
+import java.util.List;
+
+//operator ::= operatorName term term
+//operatorName ::= + | - | / | * 
+class Operator extends Function {
+
+	public static Operator parse(InputScanner input) {
+		Operator op = new Operator();
+		op.setName(OperatorName.parse(input));
+		int index = input.getIndex();
+
+		if (op.getName().compareTo("") == 0) {
+			throw new IllegalArgumentException("Invalid Function Name");
+		}
+
+		op.parseTerms(input);
+		
+		if(op.getTerms().size() != 2) {
+			throw new IllegalArgumentException("Expecting two parameters for operator at index " + index);
+		}
+		
+		return op;
+	}
+	
+	protected Operator() {}
+	
+	@Override
+	public String toInfix() {
+		List<Term> terms = this.getTerms();
+		String infix = terms.get(0).toInfix();
+		infix += this.getName();
+		infix += terms.get(1).toInfix();
+		return infix;
+	}
+	
+	public static boolean isFirstCharValid(char c) {
+		return c == '+' || c == '-' || c == '/' || c == '*';
+	}
+}

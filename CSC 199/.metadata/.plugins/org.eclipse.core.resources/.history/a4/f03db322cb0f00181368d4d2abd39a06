@@ -1,0 +1,26 @@
+package recursiveDescent;
+
+public class Main {
+
+	public static void main(String[] args) {
+		Parser p = new Parser(true);
+		String[] tests = {"(+ (* (* c c) c) (+ (* c c) (+ (+ (+ c (- a (fungp.util/sdiv b 0.0))) c) c))))",
+				"(+ (* (* c c) c) (+ (dec c) (+ (+ (+ c (- a (- b 0.0))) c) c))))", 
+				"(mod (inc (dec (abs (gcd x y)))) x)"};
+		
+		for(String test : tests) {
+			System.out.println("Test 1: " + t1);
+			p.parse(t1);
+			System.out.println("Result: " + p.toInfix());
+		}
+
+		
+		p.parse();
+		System.out.println(p.toInfix());
+		p.parse();
+		System.out.println(p.toInfix());
+		
+		return;
+	}
+
+}

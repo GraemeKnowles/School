@@ -3,8 +3,6 @@
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-#include <cmath>
-#include <iostream>
 
 #define wbCheck(stmt)                                                     \
   do {                                                                    \
@@ -41,8 +39,6 @@ __global__ void matrixMultiply(const float * const A, const float * const B, flo
 }
 
 int main(int argc, char **argv) {
-	const int WARP_SIZE = 32;
-	
 	wbArg_t args;
 	float *hostA; // The A matrix
 	float *hostB; // The B matrix
@@ -128,9 +124,9 @@ int main(int argc, char **argv) {
 
 	wbTime_start(GPU, "Freeing GPU Memory");
 	//@@ Free the GPU memory here
-	cudaFree(hostA);
-	cudaFree(hostB);
-	cudaFree(hostC);
+	cudaFree(deviceA);
+	cudaFree(deviceB);
+	cudaFree(deviceC);
 	wbTime_stop(GPU, "Freeing GPU Memory");
 	wbCheck(cudaGetLastError());
 

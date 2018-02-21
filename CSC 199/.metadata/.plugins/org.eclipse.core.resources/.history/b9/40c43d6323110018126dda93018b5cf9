@@ -1,0 +1,8 @@
+package recursiveDescent;
+
+public class FunctionFactory {
+
+	public static Function createFunction(InputScanner input) {
+		
+	}
+}
