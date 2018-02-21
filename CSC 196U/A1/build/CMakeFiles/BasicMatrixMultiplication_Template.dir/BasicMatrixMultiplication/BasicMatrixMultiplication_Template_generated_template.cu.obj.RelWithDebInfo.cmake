@@ -64,7 +64,7 @@ set(cmake_dependency_file "C:/Users/Graeme/Documents/GitHub/School/CSC 196U/A1/b
 set(CUDA_make2cmake "C:/Program Files/CMake/share/cmake-3.10/Modules/FindCUDA/make2cmake.cmake") # path
 set(CUDA_parse_cubin "C:/Program Files/CMake/share/cmake-3.10/Modules/FindCUDA/parse_cubin.cmake") # path
 set(build_cubin OFF) # bool
-set(CUDA_HOST_COMPILER "C:/Program Files (x86)/Microsoft Visual Studio/2017/Enterprise/VC/Tools/MSVC/14.11.25503/bin/HostX64/x64") # path
+set(CUDA_HOST_COMPILER "C:/Program Files (x86)/Microsoft Visual Studio/2017/Enterprise/VC/Tools/MSVC/14.11.25503/bin/HostX64/x64/cl.exe") # path
 # We won't actually use these variables for now, but we need to set this, in
 # order to force this file to be run again if it changes.
 set(generated_file_path "C:/Users/Graeme/Documents/GitHub/School/CSC 196U/A1/build/CMakeFiles/BasicMatrixMultiplication_Template.dir/BasicMatrixMultiplication/$(Configuration)") # path
