@@ -22,23 +22,22 @@ package recursiveDescent;
 
 public class Parser {
 
+	enum Grapher{WOLFRAM, DESMOS, GEOGEBRA};
+	Grapher grapher = null;
+
 	Token parsed = null;
 	
 	// Determines if the parser should output error messages to the console
 	boolean verboseErrors = false;
 	
-	public Parser() {}
-	
-	public Parser(String input) {
-		this(input, false);
+	public Parser(boolean verboseErrors, Grapher grapher)
+	{
+		this.verboseErrors = verboseErrors;
+		this.grapher = grapher;
 	}
 	
-	public Parser(boolean verboseErrors) {
-		this.verboseErrors = verboseErrors;
-	}
-	
-	public Parser(String input, boolean verboseErrors) {
-		this.verboseErrors = verboseErrors;
+	public Parser(String input, boolean verboseErrors, Grapher grapher) {
+		this(verboseErrors, grapher);
 		parse(input);
 	}
 
@@ -62,6 +61,14 @@ public class Parser {
 			return "";
 		}
 		return parsed.toInfix();
+	}
+	
+	public Grapher getGrapher() {
+		return grapher;
+	}
+
+	public void setGrapher(Grapher grapher) {
+		this.grapher = grapher;
 	}
 	
 	public boolean isVerboseErrors() {
