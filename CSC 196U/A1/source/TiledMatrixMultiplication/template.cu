@@ -15,81 +15,81 @@
     }                                                                     \
   } while (0)
 
-struct Tile {
-	int width;
-	int height;
-	int stride;
-	float* elements;
-};
-
-__device__ float getElement(Tile * const tile, int row, int column)
-{
-	return tile->elements[row * tile->stride + column];
-}
-
-__device__ Tile getTile(float * const matrix, int row, int stride, int column)
-{
-	Tile t;
-	t.width = t.height = TILE_SIZE;
-	t.stride = stride;
-	t.elements = &matrix[row * stride * TILE_SIZE + column * TILE_SIZE];
-	return t;
-}
-
 // Compute C = A * B
 __global__ void matrixMultiplyShared(float *A, float *B, float *C,
-                                     int numARows, int numAColumns,
-                                     int numBRows, int numBColumns,
-                                     int numCRows, int numCColumns) 
+	int numARows, int numAColumns,
+	int numBRows, int numBColumns,
+	int numCRows, int numCColumns)
 {
-  //@@ Insert code to implement tiled matrix multiplication here
-  //@@ You have to use shared memory to write this kernel
+	//@@ Insert code to implement tiled matrix multiplication here
+	//@@ You have to use shared memory to write this kernel
 
-	int row = blockIdx.y * blockDim.y + threadIdx.y;
-	int col = blockIdx.x * blockDim.x + threadIdx.x;
-	//printf("blockX=%i blockY=%i\n", blockIdx.x, blockIdx.y);
+	// Check to make sure the current thread index is a valid
+	// element in the c matrix
+	const int C_ROW = blockIdx.y * blockDim.y + threadIdx.y;
+	const int C_COL = blockIdx.x * blockDim.x + threadIdx.x;
+	const bool VALID_C_IND = C_ROW < numCRows && C_COL < numCColumns;
 
-	if ((row < numCRows) && (col < numCColumns))
+	// Rename for clearer code
+	const int TILE_X = threadIdx.x, TILE_Y = threadIdx.y;
+
+	// Shared memory allocation
+	// tile[x][y] x = row, y = column
+	__shared__ float aTile[TILE_SIZE][TILE_SIZE];
+	__shared__ float bTile[TILE_SIZE][TILE_SIZE];
+
+	float partialDotProduct = 0;
+	const int numTiles = (numAColumns - 1) / TILE_SIZE + 1;
+	for (int i = 0; i < numTiles; ++i)
 	{
-		__shared__ float aTile[TILE_SIZE][TILE_SIZE];
-		__shared__ float bTile[TILE_SIZE][TILE_SIZE];
+		// The row that is the top of the A tile
+		const int A_TILE_ROW = blockIdx.y * TILE_SIZE;
+		// The column that is the left of the B tile
+		const int B_TILE_COL = blockIdx.x * TILE_SIZE;
+		// The column that is the left of the A tile,
+		// and the row that is the top of the B tile
+		const int I_TILE_START = i * TILE_SIZE;
 
-		int sharedRow = threadIdx.y;
-		int sharedCol = threadIdx.x;
+		// Get pointers to the start of each tile, makes later indexing simpler
+		const float* A_TILE = &A[A_TILE_ROW * numAColumns + I_TILE_START];
+		const float* B_TILE = &B[I_TILE_START * numBColumns + B_TILE_COL];
 
-		//printf("threadX=%i threadY=%i\n", threadIdx.x, threadIdx.y);
-		
-		const int numTiles = numAColumns / TILE_SIZE;
-
-		float sum = 0;
-
-		for (int i = 0; i < numTiles; ++i)
+		// Load A tile, checking for valid matrix row/col
+		if (A_TILE_ROW + TILE_Y < numARows && I_TILE_START + TILE_X < numAColumns)
 		{
-			Tile tA = getTile(A, blockIdx.y, numAColumns, i);
-			Tile tB = getTile(B, i, numBColumns, blockIdx.x);
-
-			if (threadIdx.x == 0 && threadIdx.y == 0)
-			{
-				printf("TileA %i col=%i row=%i\n", i, blockIdx.y * TILE_SIZE, i * TILE_SIZE);
-				printf("TileB %i col=%i row=%i\n", i, i * TILE_SIZE, blockIdx.x * TILE_SIZE);
-			}
-			
-			aTile[sharedRow][sharedCol] = getElement(&tA, sharedRow, sharedCol);
-			bTile[sharedRow][sharedCol] = getElement(&tB, sharedRow, sharedCol);
-			__syncthreads();// Sync Reads
-
-			for (int j = 0; j < TILE_SIZE; ++j)
-			{
-				const int index = i * TILE_SIZE + j;
-				if (index < numAColumns && index < numBRows)
-				{
-					sum += aTile[sharedRow][j] * bTile[j][sharedCol];
-				}
-			}
-			__syncthreads();// Sync Writes
+			aTile[TILE_X][TILE_Y] = A_TILE[TILE_Y * numAColumns + TILE_X];
+		}
+		else 
+		{
+			aTile[TILE_X][TILE_Y] = 0;
 		}
 
-		C[row * numCColumns + col] = sum;
+		// Load B tile, checking for valid matrix row/col
+		if (I_TILE_START + TILE_Y < numBRows && B_TILE_COL + TILE_X < numBColumns)
+		{
+			bTile[TILE_X][TILE_Y] = B_TILE[TILE_Y * numBColumns + TILE_X];
+		}
+		else
+		{
+			bTile[TILE_X][TILE_Y] = 0;
+		}
+		
+		__syncthreads();// Sync Reads
+
+		if (VALID_C_IND)
+		{
+			// Compute the partial dot product across/down the tile
+			for (int j = 0; j < TILE_SIZE; ++j)
+			{
+				partialDotProduct += aTile[j][TILE_Y] * bTile[TILE_X][j];
+			}
+		}
+		__syncthreads();// Sync Writes
+	}
+
+	if (VALID_C_IND)
+	{
+		C[C_ROW * numCColumns + C_COL] = partialDotProduct;
 	}
 }
 
