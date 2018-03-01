@@ -1,9 +1,8 @@
+
 #include <wb.h>
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-
-#define TILE_SIZE 32
 
 #define wbCheck(stmt)                                                     \
   do {                                                                    \
@@ -16,84 +15,26 @@
   } while (0)
 
 // Compute C = A * B
-__global__ void matrixMultiplyShared(float *A, float *B, float *C,
-	int numARows, int numAColumns,
-	int numBRows, int numBColumns,
-	int numCRows, int numCColumns)
-{
-	//@@ Insert code to implement tiled matrix multiplication here
-	//@@ You have to use shared memory to write this kernel
+__global__ void matrixMultiply(const float * const A, const float * const B, float * const C,
+	const int numARows, const int numAColumns,
+	const int numBRows, const int numBColumns,
+	const int numCRows, const int numCColumns) {
+	//@@ Insert code to implement basic matrix multiplication here
+	//@@ Do not use shared memory to write this kernel
 
-	// Check to make sure the current thread index is a valid
-	// element in the c matrix
-	const int C_ROW = blockIdx.y * blockDim.y + threadIdx.y;
-	const int C_COL = blockIdx.x * blockDim.x + threadIdx.x;
-	// Save this, because it's used more than once, and the thread needs to continue
-	// to load its index from memory or 0 out, but not compute the dot product
-	const bool VALID_C_IND = C_ROW < numCRows && C_COL < numCColumns;
+	// Calculate the row index of the P element and M
+	int row = blockIdx.y * blockDim.y + threadIdx.y;
+	// Calculate the column index of P and N
+	int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-	// Rename for clearer code
-	const int TILE_X = threadIdx.x, TILE_Y = threadIdx.y;
-
-	// Shared memory allocation
-	// tile[y][x], x = row, y = column
-	__shared__ float aTile[TILE_SIZE][TILE_SIZE];
-	__shared__ float bTile[TILE_SIZE][TILE_SIZE];
-
-	// The row that is the top of the A tile
-	const int A_TILE_ROW = blockIdx.y * TILE_SIZE;
-	// The column that is the left of the B tile
-	const int B_TILE_COL = blockIdx.x * TILE_SIZE;
-
-	// Accumulates the dot product
-	float partialDotProduct = 0;
-	const int numTiles = (numAColumns - 1) / TILE_SIZE + 1;
-	for (int i = 0; i < numTiles; ++i)
+	if ((row < numCRows) && (col < numCColumns))
 	{
-		// The column that is the left of the A tile,
-		// and the row that is the top of the B tile
-		const int I_TILE_START = i * TILE_SIZE;
-
-		// Get pointers to the start of each tile, makes later indexing simpler
-		const float* A_TILE = &A[A_TILE_ROW * numAColumns + I_TILE_START];
-		const float* B_TILE = &B[I_TILE_START * numBColumns + B_TILE_COL];
-
-		// Load A tile, checking for valid matrix row/col
-		if (A_TILE_ROW + TILE_Y < numARows && I_TILE_START + TILE_X < numAColumns)
+		const int aRow = row * numAColumns;
+		const int cRow = row * numCColumns;
+		for (int i = 0; i < numAColumns; ++i)
 		{
-			aTile[TILE_Y][TILE_X] = A_TILE[TILE_Y * numAColumns + TILE_X];
+			C[cRow + col] += A[aRow + i] * B[i * numBColumns + col];
 		}
-		else 
-		{
-			aTile[TILE_Y][TILE_X] = 0;
-		}
-
-		// Load B tile, checking for valid matrix row/col
-		if (I_TILE_START + TILE_Y < numBRows && B_TILE_COL + TILE_X < numBColumns)
-		{
-			bTile[TILE_Y][TILE_X] = B_TILE[TILE_Y * numBColumns + TILE_X];
-		}
-		else
-		{
-			bTile[TILE_Y][TILE_X] = 0;
-		}
-		
-		__syncthreads();// Sync Reads
-
-		if (VALID_C_IND)
-		{
-			// Compute the partial dot product across/down the tile
-			for (int j = 0; j < TILE_SIZE; ++j)
-			{
-				partialDotProduct += aTile[TILE_Y][j] * bTile[j][TILE_X];
-			}
-		}
-		__syncthreads();// Sync Writes
-	}
-
-	if (VALID_C_IND)
-	{
-		C[C_ROW * numCColumns + C_COL] = partialDotProduct;
 	}
 }
 
@@ -123,13 +64,13 @@ int main(int argc, char **argv) {
 	hostB = (float *)wbImport(wbArg_getInputFile(args, 1), &numBRows,
 		&numBColumns);
 	const int bSize = numBRows * numBColumns * sizeof(float);
-
+	
 	//@@ Set numCRows and numCColumns
 	numCRows = numARows;
 	numCColumns = numBColumns;
 	const int cElements = numCRows * numCColumns;
 	const int cSize = cElements * sizeof(float);
-
+	
 	//@@ Allocate the hostC matrix
 	wbTime_stop(Generic, "Importing data and creating memory on host");
 	hostC = new float[cElements];
@@ -145,7 +86,7 @@ int main(int argc, char **argv) {
 	cudaMalloc((void **)&deviceC, cSize);
 	wbTime_stop(GPU, "Allocating GPU memory.");
 	wbCheck(cudaGetLastError());
-
+	
 	wbTime_start(GPU, "Copying input memory to the GPU.");
 	//@@ Copy memory to the GPU here
 	cudaMemcpy(deviceA, hostA, aSize, cudaMemcpyHostToDevice);
@@ -154,7 +95,7 @@ int main(int argc, char **argv) {
 	wbCheck(cudaGetLastError());
 
 	//@@ Initialize the grid and block dimensions here
-	const int gridSize = TILE_SIZE;
+	const int gridSize = 32;
 	const int gridY = (numCColumns - 1) / gridSize + 1;
 	const int gridX = (numCRows - 1) / gridSize + 1;
 	wbLog(TRACE, "The grid dimensions are ", gridX, " x ", gridY);
@@ -164,7 +105,7 @@ int main(int argc, char **argv) {
 
 	wbTime_start(Compute, "Performing CUDA computation");
 	//@@ Launch the GPU Kernel here
-	matrixMultiplyShared << <dimGrid, dimBlock >> > (
+	matrixMultiply << <dimGrid, dimBlock >> > (
 		deviceA, deviceB, deviceC,
 		numARows, numAColumns,
 		numBRows, numBColumns,
