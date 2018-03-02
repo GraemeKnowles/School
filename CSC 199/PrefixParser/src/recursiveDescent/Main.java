@@ -53,6 +53,13 @@ public class Main {
 		List<String> argList = Arrays.asList(arguments);
 		Iterator<String> argIterator = argList.iterator();
 		
+		// Check for help option
+		if (arguments.length == 0) {
+			printHelp();
+			options.exitProgram = true;
+			return;
+		}
+		
 		String firstArg = argIterator.next();
 		
 		// Check for help option
@@ -99,7 +106,8 @@ public class Main {
 				"Infix is needed for many graphing calculators, many of which also have different support for various function names.",
 				"Included in this program are options to tailor the output to work with various graphing calculators.",
 				"\nUsage Syntax: ",
-				"PrefixParser (" + helpShort + " | " + helpLong + ")",
+				"PrefixParser [" + helpShort + " | " + helpLong + "]",
+				" " + helpShort + " " + helpLong + "       : Display help text that you're currently reading.",
 				"PrefixParser [" + wolframLong + " | " + desmosLong + " | " + geogebraLong + "] [" + verboseShort + " | " + verboseLong + "] equation",
 				" " + wolframLong + "       : Configure for WolframAlpha, this is the default if not specified.",
 				" " + desmosLong + "        : Configure for Desmos",
