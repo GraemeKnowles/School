@@ -94,7 +94,7 @@ public class Main {
 		if(verboseArg.compareTo(verboseLong) == 0 || verboseArg.compareTo(verboseShort) == 0) {
 			options.verbose = true;
 		}else {// If the arg isn't verbose, assume it's part of the equation
-			options.equation += verboseArg;
+			options.equation += verboseArg + " ";
 		}
 		
 		while(argIterator.hasNext()) {
