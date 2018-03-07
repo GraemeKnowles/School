@@ -1,6 +1,8 @@
 package recursiveDescent;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 // function ::= validName, {" ", term}
@@ -106,5 +108,10 @@ class Function extends Token {
 
 	public static boolean isFirstCharValid(char c) {
 		return ValidName.isFirstCharValid(c);
+	}
+	
+	@Override
+	public List<Token> getSubTokens() {
+		return new LinkedList<Token>(terms);
 	}
 }

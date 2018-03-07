@@ -34,9 +34,13 @@ public class Main {
 		p.parse(options.equation);
 		System.out.println(p.toInfix());
 		
-//		String[] tests = {"(+ (* (* c c) c) (+ (* c c) (+ (+ (+ c (- a (fungp.util/sdiv b 0.0))) c) c))))",
+//		String[] tests = {
+//				"(+ (* (* c c) c) (+ (* c c) (+ (+ (+ c (- a (fungp.util/sdiv b 0.0))) c) c))))",
 //				"(+ (* (* c c) c) (+ (dec c) (+ (+ (+ c (- a (- b 0.0))) c) c))))", 
-//				"(mod (inc (dec (abs (gcd x y)))) x)"};
+//				"(mod (inc (dec (abs (gcd a b)))) a)",
+//				"(+ stuff b)",
+//		};
+//
 //		for(int i = 0; i < tests.length; ++i) {
 //			System.out.println("Test " + i + ": " + tests[i]);
 //			p.parse(tests[i]);

@@ -1,5 +1,9 @@
 package recursiveDescent;
 
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
 // term ::= param | expression
 class Term extends Token {
 
@@ -28,5 +32,10 @@ class Term extends Token {
 
 	public static boolean isFirstCharValid(char c) {
 		return Expression.isFirstCharValid(c) || ValidName.isFirstCharValid(c);
+	}
+	
+	@Override
+	public List<Token> getSubTokens() {
+		return new LinkedList<Token>(Arrays.asList(paramOrExpression));
 	}
 }

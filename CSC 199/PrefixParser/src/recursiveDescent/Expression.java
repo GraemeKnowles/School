@@ -1,5 +1,9 @@
 package recursiveDescent;
 
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
 // expression ::= "(", (function | operator) ,")"
 class Expression extends Token {
 
@@ -37,5 +41,10 @@ class Expression extends Token {
 
 	public static boolean isFirstCharValid(char c) {
 		return c == '(';
+	}
+
+	@Override
+	public List<Token> getSubTokens() {
+		return new LinkedList<Token>(Arrays.asList(function));
 	}
 }

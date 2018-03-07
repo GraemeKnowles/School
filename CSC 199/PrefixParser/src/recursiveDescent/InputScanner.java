@@ -14,7 +14,7 @@ class InputScanner {
 	}
 	
 	public char moveNext() {
-		if(currentChar + 1 >= input.length()) {
+		if(!nextValid()) {
 			return 0;
 		}
 		return input.charAt(++currentChar);
@@ -25,5 +25,9 @@ class InputScanner {
 			return 0;
 		}
 		return input.charAt(currentChar + 1);
+	}
+	
+	public boolean nextValid() {
+		return !(currentChar + 1 >= input.length());
 	}
 }

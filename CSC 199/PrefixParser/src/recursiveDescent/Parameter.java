@@ -1,5 +1,9 @@
 package recursiveDescent;
 
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
 //param ::= validName
 class Parameter extends Token {
 
@@ -26,5 +30,14 @@ class Parameter extends Token {
 
 	public static boolean isFirstCharValid(char c) {
 		return ValidName.isFirstCharValid(c);
+	}
+	
+	@Override
+	public List<Token> getSubTokens() {
+		return new LinkedList<Token>(Arrays.asList(name));
+	}
+	
+	public ValidName getName() {
+		return name;
 	}
 }
