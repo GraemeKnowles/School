@@ -1,0 +1,1 @@
+for /l %%x in (0, 1, 4) do .\Debug\Convolution_Template -e .\Convolution\Dataset\%%x\output.ppm -i .\Convolution\Dataset\%%x\input0.ppm,.\Convolution\Dataset\%%x\input1.raw -o .\Convolution\Dataset\%%x\myoutput.ppm -t image > .\Convolution\Dataset\%%x\result.txt
