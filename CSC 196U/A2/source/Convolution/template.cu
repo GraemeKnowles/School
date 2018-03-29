@@ -2,13 +2,23 @@
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include <device_functions.h>
 
 #define MASK_WIDTH 5
 #define O_TILE_WIDTH 16
-#define I_TILE_WIDTH 32
 #define BLOCK_WIDTH O_TILE_WIDTH + (MASK_WIDTH-1)
 #define NUM_CHANNELS 3
 #define clamp(x) (min(max((x), 0.0), 1.0))
+
+#define wbCheck(stmt)                                                     \
+  do {                                                                    \
+    cudaError_t err = stmt;                                               \
+    if (err != cudaSuccess) {                                             \
+      wbLog(ERROR, "Failed to run stmt ", #stmt);                         \
+      wbLog(ERROR, "Got CUDA error ...  ", cudaGetErrorString(err));      \
+      return -1;                                                          \
+    }                                                                     \
+  } while (0)
 
 //@@ INSERT CODE HERE 
 //implement the tiled 2D convolution kernel with adjustments for channels
@@ -16,40 +26,61 @@
 //clamp your output values
 
 __global__ void convolution(
-	float const * inputImage, int imageWidth, int imageHeight,
-	const float * __restrict__ mask, float const * outputImage)
+	float const * const __restrict__ mask,
+	float const * const inputImage, float * const outputImage,
+	const int imageWidth, const int imageHeight)
 {
 	// Each block loads a tile
-	__shared__ float inputTile[I_TILE_WIDTH][I_TILE_WIDTH][NUM_CHANNELS];
+	__shared__ float inputTile[BLOCK_WIDTH][BLOCK_WIDTH];
 
-	int tx = threadIdx.x;
-	int ty = threadIdx.y;
-	int row = blockIdx.y * I_TILE_WIDTH + ty;
-	int col = blockIdx.x * I_TILE_WIDTH + tx;
+	static const int H_MASK = MASK_WIDTH / 2;
+	const int tx = threadIdx.x;
+	const int ty = threadIdx.y;
+	const int tileRow = ty - H_MASK;
+	const int tileCol = tx - H_MASK;
+	const int row_o = blockIdx.y * O_TILE_WIDTH + ty;
+	const int col_o = blockIdx.x * O_TILE_WIDTH + tx;
+	const int row_i = row_o - H_MASK;
+	const int col_i = col_o - H_MASK;
 
-	// Load tile
-	for (int i = 0; i < NUM_CHANNELS; ++i)
+	const int channel = blockIdx.z;
+
+	// If the current thread corresponds to a valid data element
+	bool validElement = (row_i >= 0 && row_i < imageHeight) && (col_i >= 0 && col_i < imageWidth);
+
+	// Load tile, all threads participate
+	if (validElement)
 	{
-		if (row >= 0 && row < imageHeight)
+		inputTile[ty][tx] = inputImage[(row_i * imageWidth + col_i) * gridDim.z + channel];
+	}
+	else // if invalid, load 0
+	{
+		inputTile[ty][tx] = 0.0f;
+	}
+	
+	__syncthreads();// Sync Reads
+
+	if (validElement && tileRow >= 0 && tileRow < O_TILE_WIDTH && tileCol >= 0 && tileCol < O_TILE_WIDTH)
+	{
+		float pixVal = 0;
+		// iterate through mask
+		for (int mRow = 0; mRow < MASK_WIDTH; ++mRow)
 		{
-			if (col >= 0 && col < imageWidth)
+			int curRow = tileRow + mRow;
+			for (int mCol = 0; mCol < MASK_WIDTH; ++mCol) 
 			{
-				int index = (row * imageWidth + col) * NUM_CHANNELS + i;
-				inputTile[tx][ty][i] = inputImage[index];
+				int curCol = tileCol + mCol;
+				pixVal += inputTile[curRow][curCol] * mask[mRow * MASK_WIDTH + mCol];
 			}
 		}
-		else {
-			inputTile[tx][ty][i] = 0.0f;
-		}
+
+		// Write convoluted pixel data
+		outputImage[(row_i * imageWidth + col_i) * gridDim.z + channel] = clamp(pixVal);
 	}
-
-
-
+	__syncthreads();// Sync writes
 }
 
 int main(int argc, char *argv[]) {
-	static const int MASK_SIZE = MASK_WIDTH * MASK_WIDTH;
-
 	wbArg_t arg;
 	int maskRows;
 	int maskColumns;
@@ -77,6 +108,7 @@ int main(int argc, char *argv[]) {
 
 	assert(maskRows == MASK_WIDTH);    /* mask height is fixed to 5 */
 	assert(maskColumns == MASK_WIDTH); /* mask width is fixed to 5 */
+	static const int MASK_SIZE = maskRows * maskColumns * sizeof(float);
 
 	imageWidth = wbImage_getWidth(inputImage);
 	imageHeight = wbImage_getHeight(inputImage);
@@ -91,12 +123,13 @@ int main(int argc, char *argv[]) {
 
 	wbTime_start(GPU, "Doing GPU memory allocation");
 	//@@ INSERT CODE HERE
-	const int IMAGE_SIZE = imageWidth * imageHeight * imageChannels;
+	const int IMAGE_SIZE = imageWidth * imageHeight * imageChannels * sizeof(float);
 	cudaMalloc((void **)&deviceInputImageData, IMAGE_SIZE);
 	cudaMalloc((void **)&deviceOutputImageData, IMAGE_SIZE);
 	cudaMalloc((void **)&deviceMaskData, MASK_SIZE);
 	//allocate device memory
 	wbTime_stop(GPU, "Doing GPU memory allocation");
+	wbCheck(cudaGetLastError());
 
 	wbTime_start(Copy, "Copying data to the GPU");
 	//@@ INSERT CODE HERE
@@ -104,25 +137,27 @@ int main(int argc, char *argv[]) {
 	cudaMemcpy(deviceInputImageData, hostInputImageData, IMAGE_SIZE, cudaMemcpyHostToDevice);
 	cudaMemcpy(deviceMaskData, hostMaskData, MASK_SIZE, cudaMemcpyHostToDevice);
 	wbTime_stop(Copy, "Copying data to the GPU");
+	wbCheck(cudaGetLastError());
 
 	wbTime_start(Compute, "Doing the computation on the GPU");
 	//@@ INSERT CODE HERE
 	//initialize thread block and kernel grid dimensions
 	dim3 dimBlock(BLOCK_WIDTH, BLOCK_WIDTH);
-	dim3 dimGrid((wbImage_getWidth(inputImage) - 1) / I_TILE_WIDTH + 1,
-		(wbImage_getHeight(inputImage) - 1) / I_TILE_WIDTH + 1, 1);
+	dim3 dimGrid((wbImage_getWidth(inputImage) - 1) / O_TILE_WIDTH + 1, (wbImage_getHeight(inputImage) - 1) / O_TILE_WIDTH + 1, imageChannels);
 
 	//invoke CUDA kernel
-	convolution << <dimGrid, dimBlock, imageChannels >> > (deviceInputImageData, imageWidth, imageHeight, deviceMaskData, deviceOutputImageData);
+	convolution <<<dimGrid, dimBlock>>> (deviceMaskData, deviceInputImageData, deviceOutputImageData, imageWidth, imageHeight);
 
 	cudaDeviceSynchronize();
 	wbTime_stop(Compute, "Doing the computation on the GPU");
+	wbCheck(cudaGetLastError());
 
 	wbTime_start(Copy, "Copying data from the GPU");
 	//@@ INSERT CODE HERE
 	cudaMemcpy(hostOutputImageData, deviceOutputImageData, IMAGE_SIZE, cudaMemcpyDeviceToHost);
 	//copy results from device to host	
 	wbTime_stop(Copy, "Copying data from the GPU");
+	wbCheck(cudaGetLastError());
 
 	wbTime_stop(GPU, "Doing GPU Computation (memory + compute)");
 	
