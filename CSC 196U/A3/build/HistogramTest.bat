@@ -1,0 +1,1 @@
+for /l %%x in (0, 1, 4) do .\Debug\Histogram_Template -e .\Histogram\Dataset\%%x\output.raw -i .\Histogram\Dataset\%%x\input.raw -o .\Histogram\Dataset\%%x\myoutput.raw -t integral_vector > .\Histogram\Dataset\%%x\result.txt

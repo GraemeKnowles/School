@@ -1,0 +1,1 @@
+for /l %%x in (0, 1, 4) do .\Debug\ListScan_Template -e .\ListScan\Dataset\%%x\output.raw -i .\ListScan\Dataset\%%x\input.raw -o .\ListScan\Dataset\%%x\myoutput.raw -t vector > .\ListScan\Dataset\%%x\result.txt 
