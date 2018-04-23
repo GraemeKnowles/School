@@ -23,16 +23,14 @@ __global__ void scan(float *input, float *output, float *aux, int len) {
 
 	// Data Load
 	__shared__ float XY[2 * BLOCK_SIZE];
-	const int i = 2 * blockIdx.x*blockDim.x + threadIdx.x;
-	const bool iLLen = i < len;
+	const int i = 2 * blockIdx.x * blockDim.x + threadIdx.x;
 	const int nextI = i + blockDim.x;
-	const bool nextILLen = nextI < len;
 
-	if (iLLen)
+	if (i < len)
 	{
 		XY[threadIdx.x] = input[i];
 	}
-	if (nextILLen)
+	if (nextI < len)
 	{
 		XY[threadIdx.x + blockDim.x] = input[nextI];
 	}
@@ -62,13 +60,13 @@ __global__ void scan(float *input, float *output, float *aux, int len) {
 	__syncthreads();
 
 	// Store scanned block
-	int index = -1;
-	if (iLLen)
+	int index = 0;
+	if (i < len)
 	{
 		index = threadIdx.x;
 		output[i] = XY[index];
 	}
-	if (nextILLen)
+	if (nextI < len)
 	{
 		index = threadIdx.x + blockDim.x;
 		output[nextI] = XY[index];
@@ -140,14 +138,11 @@ int main(int argc, char **argv) {
 	wbTime_stop(GPU, "Copying input host memory to device.");
 
 	//@@ Initialize the grid and block dimensions here
-	dim3 dimBlock(BLOCK_SIZE, 1);
+	dim3 dimBlock(BLOCK_SIZE, 1, 1);
 	dim3 dimGrid(NUM_BLOCKS, 1, 1);
 
-	dim3 dimBlockAux(NUM_BLOCKS);
+	dim3 dimBlockAux(NUM_BLOCKS, 1, 1);
 	dim3 dimGridAux(1, 1, 1);
-
-	dim3 dimBlockAddSum(BLOCK_SIZE, 1);
-	dim3 dimGridAddSum(NUM_BLOCKS, 1, 1);
 
 	wbTime_start(Compute, "Performing CUDA computation");
 	//@@ Modify this to complete the functionality of the scan
@@ -161,7 +156,7 @@ int main(int argc, char **argv) {
 	scan <<<dimGridAux, dimBlockAux>>> (deviceAuxArray, deviceAuxScannedArray, NULL, NUM_BLOCKS);
 
 	//@@ Then you should call addScannedBlockSums kernel.
-	addScannedBlockSums <<<dimGridAddSum, dimBlockAddSum>>>(deviceOutput, deviceAuxScannedArray, numElements);
+	addScannedBlockSums <<<dimGrid, dimBlock>>>(deviceOutput, deviceAuxScannedArray, numElements);
 
 	cudaDeviceSynchronize();
 	wbTime_stop(Compute, "Performing CUDA computation");
