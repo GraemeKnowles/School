@@ -1,4 +1,4 @@
-package recursiveDescent;
+package prefixParser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,7 +78,14 @@ class Function extends Token {
 		switch (name) {
 		case "sdiv":
 			String denom = terms.get(1).toInfix();
-			return terms.get(0).toInfix() + "/" + (Float.parseFloat(denom) == 0 ? "1" : denom);
+			try {
+				if(Float.parseFloat(denom) == 0) {
+					denom = "1";
+				}
+			} catch (NumberFormatException ex) {
+				// Denom is not a constant, do nothing, just print it.
+			}
+			return terms.get(0).toInfix() + "/" + denom;
 		// break;
 		case "inc":
 			return terms.get(0).toInfix() + "+1";

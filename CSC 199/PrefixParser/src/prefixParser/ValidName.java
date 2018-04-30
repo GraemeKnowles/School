@@ -1,4 +1,4 @@
-package recursiveDescent;
+package prefixParser;
 
 import java.util.LinkedList;
 import java.util.List;

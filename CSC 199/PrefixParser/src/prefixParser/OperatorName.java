@@ -1,4 +1,4 @@
-package recursiveDescent;
+package prefixParser;
 
 // operatorName ::= + | - | / | * 
 class OperatorName extends ValidName {

@@ -1,4 +1,4 @@
-package recursiveDescent;
+package prefixParser;
 
 class InputScanner {
 	private String input;
