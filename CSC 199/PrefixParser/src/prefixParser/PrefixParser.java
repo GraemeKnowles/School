@@ -60,7 +60,14 @@ public class PrefixParser {
 			return;
 		}
 		
-		String firstArg = argIterator.next();
+		
+		String firstArg = "";
+		
+		if(argIterator.hasNext()) {
+			firstArg = argIterator.next();
+		}
+		
+		String grapherArg = firstArg;
 		
 		// Check for help option
 		if(arguments.length == 0 || firstArg.compareTo(helpShort) == 0 || firstArg.compareTo(helpLong) == 0) {
@@ -71,30 +78,40 @@ public class PrefixParser {
 		
 		if(firstArg.compareTo(examplesShort) == 0 || firstArg.compareTo(examplesLong) == 0) {
 			options.runExample = true;
+			if(argIterator.hasNext()) {
+				grapherArg = argIterator.next();
+			}
 		}
 		
 		options.verbose = false;
 		String verboseArg = null;
 		// Get grapher option
-		if(firstArg.compareTo(wolframLong) == 0) {
+		if(grapherArg.compareTo(wolframLong) == 0) {
 			options.grapher = Grapher.WOLFRAM;
-		}else if(firstArg.compareTo(desmosLong) == 0) {
+		}else if(grapherArg.compareTo(desmosLong) == 0) {
 			options.grapher = Grapher.DESMOS;
-		} else if (firstArg.compareTo(geogebraLong) == 0) {
+		} else if (grapherArg.compareTo(geogebraLong) == 0) {
 			options.grapher = Grapher.GEOGEBRA;
 		}else {// If no grapher specified, use default
 			options.grapher = Grapher.WOLFRAM;
-			verboseArg = firstArg;
+			verboseArg = grapherArg;
 		}
 		
 		// If the verbose arg isn't set, test for it
+		boolean hasVerbose = false;
 		if(verboseArg == null) {
-			verboseArg = argIterator.next();
+			if(argIterator.hasNext()) {
+				verboseArg = argIterator.next();
+				hasVerbose = true;
+			}
 		}
-		if(verboseArg.compareTo(verboseLong) == 0 || verboseArg.compareTo(verboseShort) == 0) {
-			options.verbose = true;
-		}else {// If the arg isn't verbose, assume it's part of the equation
-			options.equation += verboseArg + " ";
+		
+		if(hasVerbose) {
+			if(verboseArg.compareTo(verboseLong) == 0 || verboseArg.compareTo(verboseShort) == 0) {
+				options.verbose = true;
+			}else {// If the arg isn't verbose, assume it's part of the equation
+				options.equation += verboseArg + " ";
+			}
 		}
 		
 		while(argIterator.hasNext()) {
